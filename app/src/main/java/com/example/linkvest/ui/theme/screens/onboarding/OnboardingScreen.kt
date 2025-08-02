@@ -10,6 +10,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.LocalContext
+import com.example.linkvest.util.DataStoreManager
 
 @Preview(showBackground = true)
 @Composable
@@ -23,12 +26,20 @@ fun OnboardingScreen(navController: NavController) {
     var pageIndex by remember { mutableStateOf(0) }
     val totalNavigablePages = 3 // Create, Find, Easy
     val lastPageIndex = totalNavigablePages
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
     fun goToNextPage() {
         if (pageIndex < lastPageIndex) {
             pageIndex++
         } else {
-            navController.navigate("login")
+            // Salva che l'onboarding è stato completato!
+            coroutineScope.launch {
+                DataStoreManager.setOnboardingCompleted(context, true)
+                navController.navigate("login") {
+                    popUpTo(0) // opzionale: pulisce la backstack
+                }
+            }
         }
     }
 
@@ -85,7 +96,7 @@ fun OnboardingScreen(navController: NavController) {
                     pageIndex = pageIndex - 1, // 0 (Create), 1 (Find), 2 (Easy)
                     pagesSize = totalNavigablePages, // 3 pallini
                     onSkip = { skipOnboarding() },
-                    onNext = { goToNextPage() }, // <-- qui passa la funzione!
+                    onNext = { goToNextPage() },
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()

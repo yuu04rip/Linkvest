@@ -52,15 +52,19 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     implementation("androidx.compose.foundation:foundation")
-    implementation("androidx.compose.material3:material3")
     implementation("androidx.navigation:navigation-compose:2.7.7")
-
+    implementation("androidx.compose.material3:material3:1.3.2")
     implementation("androidx.compose.material:material-icons-core")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("com.google.accompanist:accompanist-pager:0.36.0") // o versione aggiornata
     implementation("com.google.accompanist:accompanist-pager-indicators:0.36.0")
     implementation("androidx.compose.material3.adaptive:adaptive")
-
+// Core DataStore
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+// Per Kotlin Coroutines (già probabilmente presente)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+// Se usi coroutines con Android
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.2")
     implementation("androidx.compose.runtime:runtime-livedata")
 

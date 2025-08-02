@@ -10,10 +10,28 @@ import androidx.navigation.compose.composable
 import com.example.linkvest.ui.theme.AppTheme
 import com.example.linkvest.ui.theme.screens.*
 import com.example.linkvest.ui.theme.screens.onboarding.OnboardingScreen// <- Import corretto!
-
+import android.content.Context
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import com.example.linkvest.util.DataStoreManager
+import android.view.View
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // FULLSCREEN COMPATIBILE
+        window.decorView.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        or View.SYSTEM_UI_FLAG_FULLSCREEN
+                        or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                )
         setContent {
             AppTheme {
                 LinkvestApp()
@@ -25,12 +43,29 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun LinkvestApp() {
     val navController = rememberNavController()
+    val context = LocalContext.current
+    var onboardingSeen by remember { mutableStateOf<Boolean?>(null) }
+    val scope = rememberCoroutineScope()
+
+    // Carica lo stato dall'onboarding dal DataStore
+    LaunchedEffect(Unit) {
+        onboardingSeen = DataStoreManager.isOnboardingCompleted(context)
+    }
+
+    // Mostra uno splash o uno schermo vuoto mentre carica (onboardingSeen==null)
+    if (onboardingSeen == null) {
+        Box(Modifier.fillMaxSize().background(Color.White)) {}
+        return
+    }
+
+    // Scegli la startDestination
+    val startDestination = if (onboardingSeen == true) "login" else "onboarding"
+
     NavHost(
         navController = navController,
-        startDestination = "onboarding"
+        startDestination = startDestination
     ) {
-
-        composable("onboarding") { OnboardingScreen(navController) } // Onboarding come da tuo file
+        composable("onboarding") { OnboardingScreen(navController) }
         composable("login") { LoginScreen(navController) }
         composable("register") { RegisterScreen(navController) }
         composable("home") { HomeScreen(navController) }
