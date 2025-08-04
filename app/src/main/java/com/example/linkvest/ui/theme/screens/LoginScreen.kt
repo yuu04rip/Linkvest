@@ -12,11 +12,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.linkvest.auth.ApiClient
+import com.example.linkvest.auth.LoginRequest
+import com.example.linkvest.util.DataStoreManager
+import kotlinx.coroutines.launch
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
 
@@ -25,12 +30,15 @@ import androidx.navigation.compose.rememberNavController
 fun LoginScreenPreview() {
     LoginScreen(navController = rememberNavController())
 }
+
 @Composable
 fun LoginScreen(navController: NavController) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
-    // Colors (personalizza a piacere)
     val backgroundColor = Color(0xFFD9A48F)
     val cardColor = Color(0xFFF3D7C6)
     val accentColor = Color(0xFF29435C)
@@ -63,7 +71,6 @@ fun LoginScreen(navController: NavController) {
                 modifier = Modifier.padding(bottom = 40.dp)
             )
 
-            // Email field
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -97,7 +104,6 @@ fun LoginScreen(navController: NavController) {
                 shape = RoundedCornerShape(24.dp)
             )
             Spacer(Modifier.height(18.dp))
-            // Password field
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -148,9 +154,34 @@ fun LoginScreen(navController: NavController) {
                 )
             }
 
-            // Login button
+            // Gestione login con salvataggio su DataStore
             Button(
-                onClick = { /* TODO: handle login */ },
+                onClick = {
+                    coroutineScope.launch {
+                        try {
+                            val response = ApiClient.authApi.login(LoginRequest(email, password))
+                            if (response.success) {
+                                // Salva lo stato su DataStore
+                                DataStoreManager.setLoggedIn(context, true)
+                                if (response.token != null) {
+                                    DataStoreManager.saveUserToken(context, response.token)
+                                }
+                                navController.navigate("home") {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            } else {
+                                val msg = response.message ?: ""
+                                if (msg.contains("non verificata", ignoreCase = true) || msg.contains("OTP", ignoreCase = true)) {
+                                    navController.navigate("otp/$email")
+                                } else {
+                                    errorMessage = msg.ifBlank { "Login error" }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            errorMessage = e.localizedMessage ?: "Network error"
+                        }
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(68.dp),
@@ -158,6 +189,11 @@ fun LoginScreen(navController: NavController) {
                 shape = RoundedCornerShape(32.dp)
             ) {
                 Text("Log in", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = textColor)
+            }
+
+            if (errorMessage != null) {
+                Spacer(Modifier.height(20.dp))
+                Text(errorMessage!!, color = Color.Red, fontSize = 16.sp)
             }
 
             Spacer(Modifier.weight(1f))

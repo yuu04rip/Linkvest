@@ -9,7 +9,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.composable
 import com.example.linkvest.ui.theme.AppTheme
 import com.example.linkvest.ui.theme.screens.*
-import com.example.linkvest.ui.theme.screens.onboarding.OnboardingScreen// <- Import corretto!
+import com.example.linkvest.ui.theme.screens.onboarding.OnboardingScreen // <- Import corretto!
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.example.linkvest.util.DataStoreManager
 import android.view.View
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,21 +46,27 @@ fun LinkvestApp() {
     val navController = rememberNavController()
     val context = LocalContext.current
     var onboardingSeen by remember { mutableStateOf<Boolean?>(null) }
+    var isLoggedIn by remember { mutableStateOf<Boolean?>(null) }
     val scope = rememberCoroutineScope()
 
-    // Carica lo stato dall'onboarding dal DataStore
+    // Carica lo stato dall'onboarding e login dal DataStore
     LaunchedEffect(Unit) {
         onboardingSeen = DataStoreManager.isOnboardingCompleted(context)
+        isLoggedIn = DataStoreManager.isLoggedIn(context)
     }
 
-    // Mostra uno splash o uno schermo vuoto mentre carica (onboardingSeen==null)
-    if (onboardingSeen == null) {
+    // Mostra uno splash o uno schermo vuoto mentre carica
+    if (onboardingSeen == null || isLoggedIn == null) {
         Box(Modifier.fillMaxSize().background(Color.White)) {}
         return
     }
 
     // Scegli la startDestination
-    val startDestination = if (onboardingSeen == true) "login" else "onboarding"
+    val startDestination = when {
+        onboardingSeen == false -> "onboarding"
+        isLoggedIn == true -> "home"
+        else -> "login"
+    }
 
     NavHost(
         navController = navController,
@@ -68,6 +75,12 @@ fun LinkvestApp() {
         composable("onboarding") { OnboardingScreen(navController) }
         composable("login") { LoginScreen(navController) }
         composable("register") { RegisterScreen(navController) }
+        composable(
+            "otp/{email}",
+        ) { backStackEntry ->
+            val email = backStackEntry.arguments?.getString("email") ?: ""
+            OtpScreen(email = email, navController = navController)
+        }
         composable("home") { HomeScreen(navController) }
         composable("drawer") { DrawerMenu(navController) }
         composable("settings") { SettingsScreen(navController) }
